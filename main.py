@@ -1,54 +1,138 @@
-import tkinter as tk
-import sqlite3
-connection = sqlite3.connect("registration.db")
-connection.execute("""
-CREATE TABLE IF NOT EXISTS registrations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT,
-    email TEXT,
-    mobile TEXT,
-    college TEXT,
-    course TEXT
-)
-""")
 
-connection.commit()
-window = tk.Tk()
-window.title("Student Registration")
-def register():
-    name = name_Entry.get()
-    email = email_Entry.get()
-    mobile = mobile_Entry.get()
-    college = college_Entry.get()
-    course = course_Entry.get()
-    connection.execute(
-        "INSERT INTO registrations (name, email, mobile, college, course) VALUES (?, ?, ?, ?, ?)",
-        (name, email, mobile, college, course)
-    )
+import tkinter as tk
+from tkinter import messagebox
+import sqlite3
+
+
+# DATABASE CONNECTION
+def connect_database():
+    connection = sqlite3.connect("registration.db")
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS registrations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            mobile TEXT NOT NULL,
+            college TEXT NOT NULL,
+            course TEXT NOT NULL
+        )
+    """)
 
     connection.commit()
+    connection.close()
 
-    print("Registration successful")
-name_label = tk.Label(window, text = "Name")
-name_label.pack()
-name_Entry = tk.Entry(window)
-name_Entry.pack()
-email_label = tk.Label(window, text = "Email")
-email_label.pack()
-email_Entry = tk.Entry(window)
-email_Entry.pack()
-mobile_label = tk.Label(window, text = "Mobile Number")
-mobile_label.pack()
-mobile_Entry = tk.Entry(window)
-mobile_Entry.pack()
-college_label = tk.Label(window, text = "College Name")
-college_label.pack()
-college_Entry = tk.Entry(window)
-college_Entry.pack()
-course_label = tk.Label(window, text = "Course")
-course_label.pack()
-course_Entry = tk.Entry(window)
-course_Entry.pack()
-register_button = tk.Button(window, text = "Register", command=register)
-register_button.pack()
-window.mainloop()
+
+# BACKEND: REGISTER STUDENT
+def register_student():
+    name = name_entry.get().strip()
+    email = email_entry.get().strip()
+    mobile = mobile_entry.get().strip()
+    college = college_entry.get().strip()
+    course = course_entry.get().strip()
+
+    if not all([name, email, mobile, college, course]):
+        messagebox.showwarning(
+            "Missing Details",
+            "Please fill in all fields."
+        )
+        return
+
+    try:
+        connection = sqlite3.connect("registration.db")
+        cursor = connection.cursor()
+
+        cursor.execute("""
+            INSERT INTO registrations
+            (name, email, mobile, college, course)
+            VALUES (?, ?, ?, ?, ?)
+        """, (name, email, mobile, college, course))
+
+        connection.commit()
+        connection.close()
+
+        messagebox.showinfo(
+            "Success",
+            "Student registered successfully!"
+        )
+
+        name_entry.delete(0, tk.END)
+        email_entry.delete(0, tk.END)
+        mobile_entry.delete(0, tk.END)
+        college_entry.delete(0, tk.END)
+        course_entry.delete(0, tk.END)
+
+    except sqlite3.Error as error:
+        messagebox.showerror("Database Error", str(error))
+
+
+# FRONTEND: CREATE WINDOW
+connect_database()
+
+root = tk.Tk()
+root.title("Student Registration System")
+root.geometry("500x520")
+root.configure(bg="#eef2f7")
+root.resizable(False, False)
+
+heading = tk.Label(
+    root,
+    text="STUDENT REGISTRATION",
+    font=("Arial", 18, "bold"),
+    bg="#243b55",
+    fg="white",
+    pady=18
+)
+heading.pack(fill="x")
+
+form = tk.Frame(root, bg="#eef2f7", padx=40, pady=20)
+form.pack(fill="both", expand=True)
+
+
+def add_field(label_text, row):
+    label = tk.Label(
+        form,
+        text=label_text,
+        font=("Arial", 11, "bold"),
+        bg="#eef2f7",
+        anchor="w"
+    )
+    label.grid(row=row, column=0, sticky="w", pady=7)
+
+    entry = tk.Entry(
+        form,
+        font=("Arial", 11),
+        width=28,
+        relief="solid",
+        bd=1
+    )
+    entry.grid(row=row, column=1, ipady=5, pady=7)
+
+    return entry
+
+
+name_entry = add_field("Name:", 0)
+email_entry = add_field("Email:", 1)
+mobile_entry = add_field("Mobile Number:", 2)
+college_entry = add_field("College:", 3)
+course_entry = add_field("Course:", 4)
+
+register_button = tk.Button(
+    form,
+    text="REGISTER",
+    command=register_student,
+    font=("Arial", 12, "bold"),
+    bg="#243b55",
+    fg="white",
+    activebackground="#365b7d",
+    activeforeground="white",
+    width=20,
+    pady=8,
+    cursor="hand2"
+)
+register_button.grid(
+    row=5, column=0, columnspan=2, pady=25
+)
+
+root.mainloop()
